@@ -21,9 +21,13 @@ async function getPatient(req, res, next) {
 
 async function createPatient(req, res, next) {
   try {
-    const { name, date_of_birth } = req.body;
+    const { name, date_of_birth, phone, email, address, gender, blood_group, allergies, conditions, medical_history, emergency_contact_name, emergency_contact_phone, room_or_location } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
-    const patient = await patientService.createPatient(req.user.id, { name, date_of_birth });
+    const patient = await patientService.createPatient(req.user.id, {
+      name, date_of_birth, phone, email, address, gender, blood_group,
+      allergies, conditions: conditions || medical_history,
+      emergency_contact_name, emergency_contact_phone,
+    });
     res.status(201).json(patient);
   } catch (err) {
     next(err);

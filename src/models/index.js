@@ -56,11 +56,11 @@ Patient.hasOne(PatientBaseline, { foreignKey: 'patient_id', as: 'baseline' });
 PatientBaseline.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
 
 // Patient -> PatientAllergy (4NF multi-valued attribute)
-Patient.hasMany(PatientAllergy, { foreignKey: 'patient_id', as: 'allergies' });
+Patient.hasMany(PatientAllergy, { foreignKey: 'patient_id', as: 'allergies', onDelete: 'CASCADE' });
 PatientAllergy.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
 
 // Patient -> PatientCondition (4NF medical history)
-Patient.hasMany(PatientCondition, { foreignKey: 'patient_id', as: 'conditions' });
+Patient.hasMany(PatientCondition, { foreignKey: 'patient_id', as: 'conditions', onDelete: 'CASCADE' });
 PatientCondition.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
 
 // --- Department Associations ---
