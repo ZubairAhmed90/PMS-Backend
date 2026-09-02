@@ -24,11 +24,6 @@ const Invoice = sequelize.define('Invoice', {
     type: DataTypes.UUID,
     allowNull: true,
   },
-  items: {
-    type: DataTypes.JSONB,
-    allowNull: false,
-    defaultValue: [],
-  },
   subtotal: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,

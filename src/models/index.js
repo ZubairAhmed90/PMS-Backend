@@ -16,6 +16,10 @@ const Prescription = require('./Prescription');
 const LabResult = require('./LabResult');
 const ClinicalNote = require('./ClinicalNote');
 const Invoice = require('./Invoice');
+const InvoiceItem = require('./InvoiceItem');
+const RoomAmenity = require('./RoomAmenity');
+const PatientAllergy = require('./PatientAllergy');
+const PatientCondition = require('./PatientCondition');
 
 // --- Existing Associations ---
 
@@ -51,9 +55,19 @@ Alert.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
 Patient.hasOne(PatientBaseline, { foreignKey: 'patient_id', as: 'baseline' });
 PatientBaseline.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
 
+// Patient -> PatientAllergy (4NF multi-valued attribute)
+Patient.hasMany(PatientAllergy, { foreignKey: 'patient_id', as: 'allergies' });
+PatientAllergy.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+
+// Patient -> PatientCondition (4NF medical history)
+Patient.hasMany(PatientCondition, { foreignKey: 'patient_id', as: 'conditions' });
+PatientCondition.belongsTo(Patient, { foreignKey: 'patient_id', as: 'patient' });
+
 // --- Department Associations ---
 Organization.hasMany(Department, { foreignKey: 'organization_id', as: 'departments' });
 Department.belongsTo(Organization, { foreignKey: 'organization_id', as: 'organization' });
+
+Department.belongsTo(Staff, { foreignKey: 'head_of_department_id', as: 'headOfDepartment' });
 
 // --- Room Associations ---
 Organization.hasMany(Room, { foreignKey: 'organization_id', as: 'rooms' });
@@ -61,6 +75,9 @@ Room.belongsTo(Organization, { foreignKey: 'organization_id', as: 'organization'
 
 Department.hasMany(Room, { foreignKey: 'department_id', as: 'rooms' });
 Room.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
+
+Room.hasMany(RoomAmenity, { foreignKey: 'room_id', as: 'amenities' });
+RoomAmenity.belongsTo(Room, { foreignKey: 'room_id', as: 'room' });
 
 // --- Staff Associations ---
 Organization.hasMany(Staff, { foreignKey: 'organization_id', as: 'staffMembers' });
@@ -116,6 +133,9 @@ Invoice.belongsTo(Admission, { foreignKey: 'admission_id', as: 'admission' });
 Organization.hasMany(Invoice, { foreignKey: 'organization_id', as: 'invoices' });
 Invoice.belongsTo(Organization, { foreignKey: 'organization_id', as: 'organization' });
 
+Invoice.hasMany(InvoiceItem, { foreignKey: 'invoice_id', as: 'items' });
+InvoiceItem.belongsTo(Invoice, { foreignKey: 'invoice_id', as: 'invoice' });
+
 module.exports = {
   sequelize,
   User,
@@ -134,4 +154,8 @@ module.exports = {
   LabResult,
   ClinicalNote,
   Invoice,
+  InvoiceItem,
+  RoomAmenity,
+  PatientAllergy,
+  PatientCondition,
 };

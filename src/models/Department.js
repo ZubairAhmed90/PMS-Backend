@@ -23,8 +23,8 @@ const Department = sequelize.define('Department', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-  head_of_department: {
-    type: DataTypes.STRING,
+  head_of_department_id: {
+    type: DataTypes.UUID,
     allowNull: true,
   },
   phone: {

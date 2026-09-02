@@ -6,7 +6,10 @@ async function listDepartments(organizationId, filters = {}) {
   if (filters.status) where.status = filters.status;
   return Department.findAll({
     where,
-    include: [{ model: Room, as: 'rooms', attributes: ['id', 'room_number', 'status'] }],
+    include: [
+      { model: Room, as: 'rooms', attributes: ['id', 'room_number', 'status'] },
+      { model: Staff, as: 'headOfDepartment', attributes: ['id', 'first_name', 'last_name', 'role', 'specialization'] },
+    ],
     order: [['name', 'ASC']],
   });
 }
@@ -16,6 +19,7 @@ async function getDepartment(departmentId) {
     include: [
       { model: Room, as: 'rooms' },
       { model: Staff, as: 'staffMembers', attributes: ['id', 'first_name', 'last_name', 'role', 'specialization'] },
+      { model: Staff, as: 'headOfDepartment', attributes: ['id', 'first_name', 'last_name', 'role', 'specialization'] },
       { model: Organization, as: 'organization', attributes: ['id', 'name'] },
     ],
   });

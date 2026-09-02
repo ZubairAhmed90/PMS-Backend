@@ -1,4 +1,4 @@
-const { Room, Department, Organization, Admission, Patient } = require('../models');
+const { Room, RoomAmenity, Department, Organization, Admission, Patient } = require('../models');
 const { Op } = require('sequelize');
 
 async function listRooms(organizationId, filters = {}) {
@@ -12,6 +12,7 @@ async function listRooms(organizationId, filters = {}) {
     where,
     include: [
       { model: Department, as: 'department', attributes: ['id', 'name'] },
+      { model: RoomAmenity, as: 'amenities', attributes: ['id', 'amenity'] },
     ],
     order: [['room_number', 'ASC']],
   });
@@ -22,24 +23,45 @@ async function getRoom(roomId) {
     include: [
       { model: Department, as: 'department' },
       { model: Organization, as: 'organization', attributes: ['id', 'name'] },
+      { model: RoomAmenity, as: 'amenities', attributes: ['id', 'amenity'] },
     ],
   });
 }
 
 async function createRoom(data) {
-  return Room.create(data);
+  const { amenities, ...roomData } = data;
+  const room = await Room.create(roomData);
+  if (amenities && amenities.length > 0) {
+    await RoomAmenity.bulkCreate(
+      amenities.map((amenity) => ({ room_id: room.id, amenity }))
+    );
+  }
+  return getRoom(room.id);
 }
 
 async function updateRoom(roomId, data) {
   const room = await Room.findByPk(roomId);
   if (!room) return null;
-  await room.update(data);
-  return room;
+
+  const { amenities, ...roomData } = data;
+  await room.update(roomData);
+
+  if (amenities !== undefined) {
+    await RoomAmenity.destroy({ where: { room_id: room.id } });
+    if (amenities.length > 0) {
+      await RoomAmenity.bulkCreate(
+        amenities.map((amenity) => ({ room_id: room.id, amenity }))
+      );
+    }
+  }
+
+  return getRoom(room.id);
 }
 
 async function deleteRoom(roomId) {
   const room = await Room.findByPk(roomId);
   if (!room) return false;
+  await RoomAmenity.destroy({ where: { room_id: room.id } });
   await room.destroy();
   return true;
 }
@@ -47,15 +69,39 @@ async function deleteRoom(roomId) {
 async function getRoomOccupancy(organizationId) {
   const rooms = await Room.findAll({
     where: { organization_id: organizationId },
-    attributes: ['id', 'room_number', 'room_type', 'capacity', 'occupied', 'status', 'floor', 'department_id'],
-    include: [{ model: Department, as: 'department', attributes: ['id', 'name'] }],
+    attributes: ['id', 'room_number', 'room_type', 'capacity', 'status', 'floor', 'department_id'],
+    include: [
+      { model: Department, as: 'department', attributes: ['id', 'name'] },
+      { model: RoomAmenity, as: 'amenities', attributes: ['id', 'amenity'] },
+    ],
   });
 
-  const totalCapacity = rooms.reduce((sum, r) => sum + (r.capacity || 0), 0);
-  const totalOccupied = rooms.reduce((sum, r) => sum + (r.occupied || 0), 0);
+  // Calculate occupied count dynamically from active admissions
+  const roomIds = rooms.map((r) => r.id);
+  const admissions = await Admission.findAll({
+    where: {
+      room_or_location: { [Op.ne]: null },
+      discharged_at: null,
+    },
+    attributes: ['room_or_location'],
+  });
+
+  const occupancyMap = admissions.reduce((map, admission) => {
+    const roomLoc = admission.room_or_location;
+    map[roomLoc] = (map[roomLoc] || 0) + 1;
+    return map;
+  }, {});
+
+  const roomsWithOccupancy = rooms.map((room) => {
+    const occupied = occupancyMap[room.room_number] || 0;
+    return { ...room.toJSON(), occupied };
+  });
+
+  const totalCapacity = roomsWithOccupancy.reduce((sum, r) => sum + (r.capacity || 0), 0);
+  const totalOccupied = roomsWithOccupancy.reduce((sum, r) => sum + (r.occupied || 0), 0);
 
   return {
-    rooms,
+    rooms: roomsWithOccupancy,
     summary: {
       total_rooms: rooms.length,
       total_capacity: totalCapacity,

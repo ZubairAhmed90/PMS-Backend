@@ -37,19 +37,10 @@ const Room = sequelize.define('Room', {
     allowNull: false,
     defaultValue: 1,
   },
-  occupied: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 0,
-  },
   rate_per_day: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
     defaultValue: 0,
-  },
-  amenities: {
-    type: DataTypes.TEXT,
-    allowNull: true,
   },
   status: {
     type: DataTypes.ENUM('available', 'occupied', 'maintenance', 'reserved'),

@@ -44,14 +44,6 @@ const Patient = sequelize.define('Patient', {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  allergies: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  medical_history: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
   emergency_contact_name: {
     type: DataTypes.STRING,
     allowNull: true,

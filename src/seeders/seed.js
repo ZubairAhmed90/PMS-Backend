@@ -17,7 +17,8 @@ const bcrypt = require('bcryptjs');
 const {
   sequelize, User, Organization, Patient, Admission, Device,
   Department, Room, Staff, Appointment, Prescription, LabResult,
-  ClinicalNote, Invoice,
+  ClinicalNote, Invoice, InvoiceItem, RoomAmenity,
+  PatientAllergy, PatientCondition,
 } = require('../models');
 const { v4: uuidv4 } = require('uuid');
 
@@ -66,54 +67,25 @@ async function seed() {
   });
   console.log(`[Seed] Caregiver: ${caregiver.email} (password: caregiver123)`);
 
-  // ─── Departments ────────────────────────────────────────────────
+  // ─── Departments (heads assigned after staff creation) ──────────
   const deptData = [
-    { name: 'Cardiology', code: 'CARD', floor: '2nd', head_of_department: 'Dr. Asim Raza', description: 'Heart and cardiovascular system' },
-    { name: 'Neurology', code: 'NEUR', floor: '3rd', head_of_department: 'Dr. Fatima Sheikh', description: 'Brain and nervous system' },
-    { name: 'Orthopedics', code: 'ORTH', floor: '1st', head_of_department: 'Dr. Tariq Mehmood', description: 'Bones, joints, and muscles' },
-    { name: 'Emergency', code: 'EMER', floor: 'Ground', head_of_department: 'Dr. Nadia Hussain', description: 'Emergency and trauma care' },
-    { name: 'General Medicine', code: 'GENM', floor: '1st', head_of_department: 'Dr. Kamran Ali', description: 'General internal medicine' },
+    { name: 'Cardiology', code: 'CARD', floor: '2nd', description: 'Heart and cardiovascular system', head_employee_id: 'DOC-001' },
+    { name: 'Neurology', code: 'NEUR', floor: '3rd', description: 'Brain and nervous system', head_employee_id: 'DOC-002' },
+    { name: 'Orthopedics', code: 'ORTH', floor: '1st', description: 'Bones, joints, and muscles', head_employee_id: 'DOC-003' },
+    { name: 'Emergency', code: 'EMER', floor: 'Ground', description: 'Emergency and trauma care', head_employee_id: 'DOC-004' },
+    { name: 'General Medicine', code: 'GENM', floor: '1st', description: 'General internal medicine', head_employee_id: 'DOC-005' },
   ];
 
   const departments = {};
   for (const d of deptData) {
+    const { head_employee_id, ...deptFields } = d;
     const [dept] = await Department.findOrCreate({
       where: { organization_id: org.id, code: d.code },
-      defaults: { id: uuidv4(), organization_id: org.id, ...d, status: 'active' },
+      defaults: { id: uuidv4(), organization_id: org.id, ...deptFields, status: 'active' },
     });
     departments[d.code] = dept;
     console.log(`[Seed] Department: ${dept.name} (${dept.code})`);
   }
-
-  // ─── Rooms ──────────────────────────────────────────────────────
-  const roomData = [
-    { room_number: '101', room_type: 'general', floor: '1st', department_id: departments.GENM.id, capacity: 6, occupied: 4, rate_per_day: 2000, status: 'occupied' },
-    { room_number: '102', room_type: 'general', floor: '1st', department_id: departments.GENM.id, capacity: 6, occupied: 3, rate_per_day: 2000, status: 'occupied' },
-    { room_number: '103', room_type: 'private', floor: '1st', department_id: departments.GENM.id, capacity: 1, occupied: 1, rate_per_day: 8000, status: 'occupied' },
-    { room_number: '201', room_type: 'private', floor: '2nd', department_id: departments.CARD.id, capacity: 1, occupied: 1, rate_per_day: 10000, status: 'occupied' },
-    { room_number: '202', room_type: 'semi_private', floor: '2nd', department_id: departments.CARD.id, capacity: 2, occupied: 1, rate_per_day: 6000, status: 'occupied' },
-    { room_number: '203', room_type: 'private', floor: '2nd', department_id: departments.CARD.id, capacity: 1, occupied: 0, rate_per_day: 10000, status: 'available' },
-    { room_number: 'ICU-1', room_type: 'icu', floor: '2nd', department_id: departments.CARD.id, capacity: 1, occupied: 1, rate_per_day: 25000, status: 'occupied' },
-    { room_number: 'ICU-2', room_type: 'icu', floor: '2nd', department_id: departments.CARD.id, capacity: 1, occupied: 0, rate_per_day: 25000, status: 'available' },
-    { room_number: 'ICU-3', room_type: 'icu', floor: '2nd', department_id: departments.NEUR.id, capacity: 1, occupied: 1, rate_per_day: 25000, status: 'occupied' },
-    { room_number: '301', room_type: 'ward', floor: '3rd', department_id: departments.NEUR.id, capacity: 8, occupied: 5, rate_per_day: 1500, status: 'occupied' },
-    { room_number: '302', room_type: 'private', floor: '3rd', department_id: departments.NEUR.id, capacity: 1, occupied: 0, rate_per_day: 10000, status: 'available' },
-    { room_number: 'ER-1', room_type: 'emergency', floor: 'Ground', department_id: departments.EMER.id, capacity: 1, occupied: 0, rate_per_day: 5000, status: 'available' },
-    { room_number: 'ER-2', room_type: 'emergency', floor: 'Ground', department_id: departments.EMER.id, capacity: 1, occupied: 1, rate_per_day: 5000, status: 'occupied' },
-    { room_number: 'OT-1', room_type: 'operation_theater', floor: '1st', department_id: departments.ORTH.id, capacity: 1, occupied: 0, rate_per_day: 50000, status: 'available' },
-    { room_number: '401', room_type: 'general', floor: '1st', department_id: departments.ORTH.id, capacity: 4, occupied: 2, rate_per_day: 2500, status: 'occupied' },
-    { room_number: 'ISO-1', room_type: 'isolation', floor: 'Ground', department_id: departments.GENM.id, capacity: 1, occupied: 0, rate_per_day: 15000, status: 'maintenance' },
-  ];
-
-  const rooms = [];
-  for (const r of roomData) {
-    const [room] = await Room.findOrCreate({
-      where: { organization_id: org.id, room_number: r.room_number },
-      defaults: { id: uuidv4(), organization_id: org.id, ...r },
-    });
-    rooms.push(room);
-  }
-  console.log(`[Seed] ${rooms.length} rooms created`);
 
   // ─── Staff ──────────────────────────────────────────────────────
   const staffData = [
@@ -139,17 +111,94 @@ async function seed() {
   }
   console.log(`[Seed] ${staffData.length} staff members created`);
 
+  // ─── Assign department heads ────────────────────────────────────
+  for (const d of deptData) {
+    const head = staffMembers[d.head_employee_id];
+    if (head) {
+      await Department.update(
+        { head_of_department_id: head.id },
+        { where: { id: departments[d.code].id } }
+      );
+    }
+  }
+  console.log('[Seed] Department heads assigned');
+
+  // ─── Rooms ──────────────────────────────────────────────────────
+  const roomData = [
+    { room_number: '101', room_type: 'general', floor: '1st', department_id: departments.GENM.id, capacity: 6, rate_per_day: 2000, status: 'occupied', amenities: ['Oxygen', 'Nurse Call', 'TV'] },
+    { room_number: '102', room_type: 'general', floor: '1st', department_id: departments.GENM.id, capacity: 6, rate_per_day: 2000, status: 'occupied', amenities: ['Oxygen', 'Nurse Call'] },
+    { room_number: '103', room_type: 'private', floor: '1st', department_id: departments.GENM.id, capacity: 1, rate_per_day: 8000, status: 'occupied', amenities: ['AC', 'TV', 'Attached Bath', 'Nurse Call'] },
+    { room_number: '201', room_type: 'private', floor: '2nd', department_id: departments.CARD.id, capacity: 1, rate_per_day: 10000, status: 'occupied', amenities: ['AC', 'TV', 'Attached Bath', 'Cardiac Monitor', 'Nurse Call'] },
+    { room_number: '202', room_type: 'semi_private', floor: '2nd', department_id: departments.CARD.id, capacity: 2, rate_per_day: 6000, status: 'occupied', amenities: ['AC', 'TV', 'Nurse Call'] },
+    { room_number: '203', room_type: 'private', floor: '2nd', department_id: departments.CARD.id, capacity: 1, rate_per_day: 10000, status: 'available', amenities: ['AC', 'TV', 'Attached Bath', 'Cardiac Monitor', 'Nurse Call'] },
+    { room_number: 'ICU-1', room_type: 'icu', floor: '2nd', department_id: departments.CARD.id, capacity: 1, rate_per_day: 25000, status: 'occupied', amenities: ['Ventilator', 'Cardiac Monitor', 'Oxygen', 'Dialysis Hookup'] },
+    { room_number: 'ICU-2', room_type: 'icu', floor: '2nd', department_id: departments.CARD.id, capacity: 1, rate_per_day: 25000, status: 'available', amenities: ['Ventilator', 'Cardiac Monitor', 'Oxygen', 'Dialysis Hookup'] },
+    { room_number: 'ICU-3', room_type: 'icu', floor: '2nd', department_id: departments.NEUR.id, capacity: 1, rate_per_day: 25000, status: 'occupied', amenities: ['Ventilator', 'Neuro Monitor', 'Oxygen'] },
+    { room_number: '301', room_type: 'ward', floor: '3rd', department_id: departments.NEUR.id, capacity: 8, rate_per_day: 1500, status: 'occupied', amenities: ['Oxygen', 'Nurse Call'] },
+    { room_number: '302', room_type: 'private', floor: '3rd', department_id: departments.NEUR.id, capacity: 1, rate_per_day: 10000, status: 'available', amenities: ['AC', 'TV', 'Attached Bath', 'Nurse Call'] },
+    { room_number: 'ER-1', room_type: 'emergency', floor: 'Ground', department_id: departments.EMER.id, capacity: 1, rate_per_day: 5000, status: 'available', amenities: ['Oxygen', 'Crash Cart', 'Nurse Call'] },
+    { room_number: 'ER-2', room_type: 'emergency', floor: 'Ground', department_id: departments.EMER.id, capacity: 1, rate_per_day: 5000, status: 'occupied', amenities: ['Oxygen', 'Crash Cart', 'Nurse Call'] },
+    { room_number: 'OT-1', room_type: 'operation_theater', floor: '1st', department_id: departments.ORTH.id, capacity: 1, rate_per_day: 50000, status: 'available', amenities: ['Surgical Lights', 'Anesthesia Machine', 'Sterile Equipment'] },
+    { room_number: '401', room_type: 'general', floor: '1st', department_id: departments.ORTH.id, capacity: 4, rate_per_day: 2500, status: 'occupied', amenities: ['Oxygen', 'Nurse Call', 'TV'] },
+    { room_number: 'ISO-1', room_type: 'isolation', floor: 'Ground', department_id: departments.GENM.id, capacity: 1, rate_per_day: 15000, status: 'maintenance', amenities: ['Negative Pressure', 'AC', 'Attached Bath'] },
+  ];
+
+  const rooms = [];
+  for (const r of roomData) {
+    const { amenities, ...roomFields } = r;
+    const [room] = await Room.findOrCreate({
+      where: { organization_id: org.id, room_number: r.room_number },
+      defaults: { id: uuidv4(), organization_id: org.id, ...roomFields },
+    });
+    if (amenities && amenities.length > 0) {
+      const existingAmenities = await RoomAmenity.findAll({ where: { room_id: room.id } });
+      if (existingAmenities.length === 0) {
+        await RoomAmenity.bulkCreate(
+          amenities.map((amenity) => ({ id: uuidv4(), room_id: room.id, amenity }))
+        );
+      }
+    }
+    rooms.push(room);
+  }
+  console.log(`[Seed] ${rooms.length} rooms created`);
+
   // ─── Patients ───────────────────────────────────────────────────
   const patientData = [
-    { name: 'Fatima Bibi', dob: '1952-03-15', gender: 'female', phone: '+92-321-1111111', blood_group: 'A+', allergies: 'Penicillin', medical_history: 'Hypertension, Type 2 Diabetes', admitted: true, room: 'ICU-1', patient_number: 'PT-2025-001' },
-    { name: 'Muhammad Rashid', dob: '1948-07-22', gender: 'male', phone: '+92-321-2222222', blood_group: 'O+', allergies: 'None', medical_history: 'Coronary Artery Disease, Previous MI', admitted: true, room: '201', patient_number: 'PT-2025-002' },
-    { name: 'Amina Khatoon', dob: '1955-11-08', gender: 'female', phone: '+92-321-3333333', blood_group: 'B+', allergies: 'Sulfa drugs', medical_history: 'Osteoarthritis', admitted: false, room: null, patient_number: 'PT-2025-003' },
-    { name: 'Ali Hassan', dob: '1975-01-30', gender: 'male', phone: '+92-321-4444444', blood_group: 'AB+', allergies: 'Aspirin', medical_history: 'Epilepsy, Migraine', admitted: true, room: '301', patient_number: 'PT-2025-004' },
-    { name: 'Zainab Begum', dob: '1960-05-12', gender: 'female', phone: '+92-321-5555555', blood_group: 'O-', allergies: 'Latex', medical_history: 'Chronic Kidney Disease Stage 3, Anemia', admitted: true, room: '103', patient_number: 'PT-2025-005' },
+    {
+      name: 'Fatima Bibi', dob: '1952-03-15', gender: 'female', phone: '+92-321-1111111', blood_group: 'A+',
+      allergies: ['Penicillin'],
+      conditions: ['Hypertension', 'Type 2 Diabetes'],
+      admitted: true, room: 'ICU-1', patient_number: 'PT-2025-001',
+    },
+    {
+      name: 'Muhammad Rashid', dob: '1948-07-22', gender: 'male', phone: '+92-321-2222222', blood_group: 'O+',
+      allergies: [],
+      conditions: ['Coronary Artery Disease', 'Previous MI'],
+      admitted: true, room: '201', patient_number: 'PT-2025-002',
+    },
+    {
+      name: 'Amina Khatoon', dob: '1955-11-08', gender: 'female', phone: '+92-321-3333333', blood_group: 'B+',
+      allergies: ['Sulfa drugs'],
+      conditions: ['Osteoarthritis'],
+      admitted: false, room: null, patient_number: 'PT-2025-003',
+    },
+    {
+      name: 'Ali Hassan', dob: '1975-01-30', gender: 'male', phone: '+92-321-4444444', blood_group: 'AB+',
+      allergies: ['Aspirin'],
+      conditions: ['Epilepsy', 'Migraine'],
+      admitted: true, room: '301', patient_number: 'PT-2025-004',
+    },
+    {
+      name: 'Zainab Begum', dob: '1960-05-12', gender: 'female', phone: '+92-321-5555555', blood_group: 'O-',
+      allergies: ['Latex'],
+      conditions: ['Chronic Kidney Disease Stage 3', 'Anemia'],
+      admitted: true, room: '103', patient_number: 'PT-2025-005',
+    },
   ];
 
   const patientRecords = [];
   for (const p of patientData) {
+    const { allergies, conditions, ...patientFields } = p;
     const [patient] = await Patient.findOrCreate({
       where: { name: p.name },
       defaults: {
@@ -161,8 +210,6 @@ async function seed() {
         gender: p.gender,
         phone: p.phone,
         blood_group: p.blood_group,
-        allergies: p.allergies,
-        medical_history: p.medical_history,
         emergency_contact_name: 'Ahmed Khan',
         emergency_contact_phone: '+92-321-0000000',
         status: 'active',
@@ -170,6 +217,24 @@ async function seed() {
     });
     patientRecords.push(patient);
     console.log(`[Seed] Patient: ${patient.name} (${patient.patient_number})`);
+
+    // 4NF: allergies stored in separate table (multi-valued attribute)
+    const existingAllergies = await PatientAllergy.findAll({ where: { patient_id: patient.id } });
+    if (existingAllergies.length === 0 && allergies && allergies.length > 0) {
+      await PatientAllergy.bulkCreate(
+        allergies.map((allergy) => ({ id: uuidv4(), patient_id: patient.id, allergy, severity: 'unknown' }))
+      );
+      console.log(`[Seed]   Allergies: ${allergies.join(', ')}`);
+    }
+
+    // 4NF: medical history conditions stored in separate table
+    const existingConditions = await PatientCondition.findAll({ where: { patient_id: patient.id } });
+    if (existingConditions.length === 0 && conditions && conditions.length > 0) {
+      await PatientCondition.bulkCreate(
+        conditions.map((condition) => ({ id: uuidv4(), patient_id: patient.id, condition, status: 'active' }))
+      );
+      console.log(`[Seed]   Conditions: ${conditions.join(', ')}`);
+    }
 
     const deviceKey = `dev-${patient.name.toLowerCase().replace(/\s+/g, '-')}`;
     await Device.findOrCreate({
@@ -286,7 +351,27 @@ async function seed() {
   ];
 
   for (const inv of invoiceData) {
-    await Invoice.create({ id: uuidv4(), organization_id: org.id, payment_method: inv.paid_amount > 0 ? 'cash' : null, ...inv });
+    const { items, ...invoiceFields } = inv;
+    const [invoice, created] = await Invoice.findOrCreate({
+      where: { invoice_number: invoiceFields.invoice_number },
+      defaults: { id: uuidv4(), organization_id: org.id, payment_method: inv.paid_amount > 0 ? 'cash' : null, ...invoiceFields },
+    });
+
+    if (created && items && items.length > 0) {
+      const existingItems = await InvoiceItem.findAll({ where: { invoice_id: invoice.id } });
+      if (existingItems.length === 0) {
+        await InvoiceItem.bulkCreate(
+          items.map((item) => ({
+            id: uuidv4(),
+            invoice_id: invoice.id,
+            description: item.description,
+            quantity: item.quantity || 1,
+            unit_price: item.unit_price || item.amount,
+            amount: item.amount || (item.quantity || 1) * (item.unit_price || 0),
+          }))
+        );
+      }
+    }
   }
   console.log(`[Seed] ${invoiceData.length} invoices created`);
 
