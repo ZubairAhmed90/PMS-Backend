@@ -3,7 +3,7 @@
 ## What you need on cPanel
 
 1. A subdomain for the API, e.g., `api.yourdomain.com`
-2. cPanel PostgreSQL database
+2. cPanel MySQL/MariaDB database
 3. cPanel Redis (optional — external Redis like Upstash also works)
 4. Node.js selector (cPanel → Setup Node.js App)
 
@@ -24,10 +24,11 @@ Do **not** upload:
 - `dist/`
 
 ### 2. Create database
-Go to cPanel → PostgreSQL Databases:
+Go to cPanel → MySQL Database Wizard:
 - Create database: `pms_production`
 - Create user and password
 - Add user to database
+- Grant all privileges
 
 ### 3. Setup Node.js App
 cPanel → Setup Node.js App:
@@ -43,7 +44,7 @@ After creation, click **Run NPM Install**.
 In the same cPanel Node.js app page, add these environment variables:
 
 ```
-DATABASE_URL=postgres://cpanel_db_user:password@localhost:5432/pms_production
+DATABASE_URL=mysql://cpanel_db_user:password@localhost:3306/pms_production
 JWT_SECRET=your-random-64-char-secret
 JWT_EXPIRES_IN=24h
 REDIS_URL=redis://localhost:6379
@@ -83,4 +84,4 @@ Run `npm install` again from cPanel or SSH. All dependencies are pure JS and sho
 Check the Node.js app error log in cPanel. Usually it's one of:
 - Wrong startup file path (`src/server.js`)
 - Missing `DATABASE_URL`
-- PostgreSQL user cannot connect
+- MySQL/MariaDB user cannot connect

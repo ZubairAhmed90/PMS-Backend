@@ -2,7 +2,7 @@ const { Sequelize } = require('sequelize');
 const config = require('./index');
 
 const sequelize = new Sequelize(config.database.url, {
-  dialect: 'postgres',
+  dialect: 'mysql',
   logging: config.nodeEnv === 'development' ? console.log : false,
   pool: {
     max: 10,
