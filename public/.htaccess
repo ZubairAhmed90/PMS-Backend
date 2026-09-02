@@ -1,10 +1,22 @@
 # ═══════════════════════════════════════════════════════
 # Backend API — cPanel Passenger Configuration
 # ═══════════════════════════════════════════════════════
-# Place this file in the subdomain's document root (e.g., api.yourdomain.com/public/)
+# Place this file in the subdomain's document root
+# (e.g., public_html/api/ or api.yourdomain.com/)
 # when deploying the Node.js backend via cPanel → Setup Node.js App.
+#
+# cPanel creates a similar .htaccess automatically; merge these settings
+# if cPanel has already generated one.
+# ═══════════════════════════════════════════════════════
 
 # ── Passenger — Node.js app entry point ──────────────
+PassengerEnabled on
+PassengerAppType node
+PassengerAppRoot /home/USERNAME/pms-backend
+PassengerStartupFile src/server.js
+PassengerNodejs /home/USERNAME/nodevenv/pms-backend/18/bin/node
+
+# Proxy fallback (if Passenger is not available)
 RewriteEngine On
 RewriteRule ^(.*)$ http://127.0.0.1:4000/$1 [P]
 
