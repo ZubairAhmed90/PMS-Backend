@@ -11,7 +11,8 @@ const cors = require('cors');
 const { Server } = require('socket.io');
 
 // --- Config ---
-const PORT = process.env.PORT || 4000;
+// cPanel Passenger sets PORT automatically — no hardcoded fallback
+const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const SYNC_DB = process.argv.includes('--sync') || NODE_ENV !== 'production';
 
@@ -182,7 +183,8 @@ async function start() {
       console.log('[DB] Models synced to database');
     }
 
-    server.listen(PORT, () => {
+    // Listen on 0.0.0.0 so cPanel Passenger proxy can reach us
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`\n  PMS Caregiver Backend`);
       console.log(`  ─────────────────────────────────`);
       console.log(`  Port:    ${PORT}`);
