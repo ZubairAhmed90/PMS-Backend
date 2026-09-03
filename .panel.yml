@@ -1,0 +1,10 @@
+# cPanel Git Deployment Config
+# This file tells cPanel how to deploy the Node.js app after a git pull
+
+deployment:
+  tasks:
+    - export NODE_ENV=production
+    - export DEPLOY_PATH=/home/petzonep/PMS-Caregiver-backend
+    - cd $DEPLOY_PATH
+    - npm install --production
+    - echo "Deployment complete"
