@@ -45,6 +45,7 @@ async function listInvoices(organizationId, filters = {}) {
     include: [
       { model: Patient, as: 'patient', attributes: ['id', 'name', 'patient_number'] },
       { model: Admission, as: 'admission', attributes: ['id', 'room_or_location', 'admitted_at'] },
+      { model: InvoiceItem, as: 'items' },
     ],
     order: [['created_at', 'DESC']],
     limit: filters.limit || 50,
