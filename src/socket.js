@@ -17,14 +17,18 @@ function setupSocketIO(httpServer) {
     transports: ['websocket', 'polling'],
   });
 
-  // Set up Redis adapter for multi-replica broadcasting
-  try {
-    const pubClient = getRedisClient();
-    const subClient = pubClient.duplicate();
-    io.adapter(createAdapter(pubClient, subClient));
-    console.log('[Socket.io] Redis adapter configured for multi-replica');
-  } catch (err) {
-    console.warn('[Socket.io] Redis adapter not available — single-replica mode');
+  // Set up Redis adapter for multi-replica broadcasting (optional)
+  if (process.env.REDIS_URL) {
+    try {
+      const pubClient = getRedisClient();
+      const subClient = pubClient.duplicate();
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log('[Socket.io] Redis adapter configured for multi-replica');
+    } catch (err) {
+      console.warn('[Socket.io] Redis adapter not available — single-replica mode:', err.message);
+    }
+  } else {
+    console.log('[Socket.io] No REDIS_URL — running in single-replica mode');
   }
 
   io.on('connection', (socket) => {

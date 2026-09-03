@@ -1,7 +1,11 @@
 const { Sequelize } = require('sequelize');
 const config = require('./index');
 
-const sequelize = new Sequelize(config.database.url, {
+const db = config.database;
+
+const sequelize = new Sequelize(db.name, db.username, db.password, {
+  host: db.host,
+  port: db.port,
   dialect: 'mysql',
   logging: config.nodeEnv === 'development' ? console.log : false,
   pool: {

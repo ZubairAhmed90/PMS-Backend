@@ -8,7 +8,11 @@ module.exports = {
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
   },
   database: {
-    url: process.env.DATABASE_URL || 'postgres://pms_user:pms_pass@localhost:5432/pms_db',
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT, 10) || 3306,
+    username: process.env.DB_USER || 'pms_user',
+    password: process.env.DB_PASSWORD || 'pms_pass',
+    name: process.env.DB_NAME || 'pms_db',
   },
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',

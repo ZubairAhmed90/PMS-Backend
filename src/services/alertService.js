@@ -26,10 +26,12 @@ async function createAlertIfRisky(patientId, reading, riskResult) {
     status: 'pending_confirmation',
   });
 
-  // Cache risk score in Redis
+  // Cache risk score in Redis (optional)
   try {
     const redis = getRedisClient();
-    await redis.set(`risk:${patientId}`, JSON.stringify({ risk_score, alert_level, alertId: alert.id }));
+    if (redis) {
+      await redis.set(`risk:${patientId}`, JSON.stringify({ risk_score, alert_level, alertId: alert.id }));
+    }
   } catch (err) {
     console.error('[Redis] Failed to cache risk score:', err.message);
   }
