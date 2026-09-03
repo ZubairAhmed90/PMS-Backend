@@ -36,11 +36,20 @@ app.use(cors({
 app.use(express.json());
 
 // --- Health check ---
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+  const { sequelize } = require('./models');
+  let dbStatus = 'disconnected';
+  try {
+    await sequelize.authenticate();
+    dbStatus = 'connected';
+  } catch { dbStatus = 'error'; }
   res.json({
-    status: 'ok',
+    status: dbStatus === 'connected' ? 'ok' : 'degraded',
     timestamp: new Date().toISOString(),
-    replica: process.env.HOSTNAME || 'unknown',
+    uptime: Math.floor(process.uptime()),
+    db: dbStatus,
+    redis: process.env.REDIS_URL ? 'configured' : 'not configured',
+    replica: process.env.HOSTNAME || 'single',
   });
 });
 

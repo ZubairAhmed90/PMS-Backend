@@ -1,0 +1,4 @@
+RewriteEngine On
+# Let Passenger handle everything
+# The Node.js app is configured in cPanel → Setup Node.js App
+# Startup file: src/server.js

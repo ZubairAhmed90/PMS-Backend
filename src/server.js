@@ -14,7 +14,7 @@ app.set('io', io);
 async function start() {
   try {
     await sequelize.authenticate();
-    console.log('[DB] PostgreSQL connected');
+    console.log('[DB] MySQL connected');
 
     // Sync models in development (use migrations in production)
     if (config.nodeEnv === 'development') {
