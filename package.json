@@ -2,13 +2,13 @@
   "name": "pms-backend",
   "version": "1.0.0",
   "description": "Smart Patient Monitoring System — Backend API",
-  "main": "src/server.js",
+  "main": "server.js",
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "start": "node server.js --sync",
+    "dev": "nodemon server.js",
     "worker": "node workers/ingest.js",
     "db:migrate": "npx sequelize-cli db:migrate",
     "db:seed": "node src/seeders/seed.js",
